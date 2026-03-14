@@ -1,0 +1,1989 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Vũ trụ hình học • STEM Toán • Bảo Ngọc 73</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    :root{
+      --bg0:#04050d;
+      --bg1:#090b18;
+      --bg2:#0b1026;
+      --txt:rgba(255,255,255,.94);
+      --muted:rgba(255,255,255,.74);
+      --stroke:rgba(255,255,255,.16);
+      --glass:rgba(255,255,255,.08);
+      --glass2:rgba(255,255,255,.10);
+      --shadow:0 18px 60px rgba(0,0,0,.45);
+      --accent:#7aa7ff;
+      --accent2:#b4ffd7;
+      --danger:#ff6a8a;
+      --overlay:rgba(3,5,14,.78);
+      --overlay-soft:rgba(3,5,14,.62);
+
+      --popup-bg: rgba(8,10,22,.96);
+      --popup-bg-2: rgba(14,17,34,.96);
+      --popup-border: rgba(255,255,255,.10);
+      --popup-item: rgba(255,255,255,.035);
+      --popup-item-hover: rgba(255,255,255,.055);
+      --popup-text: rgba(245,248,255,.95);
+      --popup-muted: rgba(220,230,255,.72);
+      --popup-badge-bg: rgba(122,167,255,.10);
+      --popup-badge-border: rgba(122,167,255,.20);
+      --popup-close-bg: rgba(255,255,255,.04);
+      --popup-close-hover: rgba(255,255,255,.08);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:"IBM Plex Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1200px 700px at 50% 20%, rgba(122,167,255,.12), transparent 55%),
+        radial-gradient(900px 650px at 20% 80%, rgba(180,255,215,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg2));
+      color:var(--txt);
+      overflow:hidden;
+    }
+
+    #galaxy{
+      position:fixed; inset:0;
+      width:100vw; height:100vh;
+      z-index:-3;
+      pointer-events:none;
+    }
+    .vignette{
+      position:fixed; inset:0;
+      z-index:-2; pointer-events:none;
+      background: radial-gradient(circle at 50% 35%, rgba(0,0,0,0) 0%, rgba(0,0,0,.30) 68%, rgba(0,0,0,.72) 100%);
+    }
+
+    .hud{
+      position:fixed; left:12px; right:12px; top:12px;
+      z-index:80;
+      display:flex; justify-content:space-between; align-items:center;
+      gap:10px;
+      pointer-events:none;
+    }
+    .hud-left,.hud-right{ display:flex; gap:10px; align-items:center; pointer-events:auto; }
+
+    .pill{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      user-select:none;
+    }
+    .btn{
+      border:none; cursor:pointer;
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--txt);
+      font-weight:700;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      transition:.15s transform,.15s background,.15s opacity;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); }
+    .btn:active{ transform: scale(.98); }
+    .btn.primary{
+      background: linear-gradient(90deg, rgba(122,167,255,.22), rgba(180,255,215,.18));
+      border:1px solid rgba(255,255,255,.16);
+    }
+    .btn.danger{
+      background: rgba(255,106,138,.10);
+      border:1px solid rgba(255,106,138,.22);
+      color:#ffdbe2;
+    }
+
+    .buddyIcon{
+      width:40px;height:40px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      overflow:hidden;
+      display:grid; place-items:center;
+      cursor:pointer;
+      animation: buddyBob 2.2s ease-in-out infinite;
+      transform-origin:center bottom;
+    }
+    @keyframes buddyBob{
+      0%,100%{ transform:translateY(0) rotate(0deg) scale(1); }
+      25%{ transform:translateY(-2px) rotate(-1.2deg) scale(1.02); }
+      50%{ transform:translateY(-4px) rotate(0deg) scale(1.03); }
+      75%{ transform:translateY(-2px) rotate(1.2deg) scale(1.02); }
+    }
+    .buddyText{ display:flex; flex-direction:column; line-height:1.05; }
+    .buddyText b{ font-size:13px; }
+    .buddyText span{ font-size:11px; opacity:.75; font-weight:600; }
+
+    .screen{
+      position:absolute; inset:0;
+      display:none;
+      overflow-y:auto;
+      -webkit-overflow-scrolling: touch;
+      padding:92px 16px 22px;
+    }
+    .screen.active{ display:block; }
+
+    .wrap{ width:min(980px, 100%); margin:0 auto; }
+
+    .card{
+      border-radius:22px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      padding:18px;
+      backdrop-filter: blur(10px);
+    }
+
+    h1,h2{ margin:0 0 10px; letter-spacing:.2px; }
+    h1{ font-size: clamp(22px, 3.6vw, 36px); }
+    h2{ font-size: 18px; opacity:.95; }
+    .muted{ color:var(--muted); font-weight:600; }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .spacer{ height:12px; }
+    .input{
+      width:100%;
+      padding:12px 14px;
+      border-radius:14px;
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--txt);
+      outline:none;
+      font-size:15px;
+      font-weight:600;
+    }
+
+    .homeCorner{
+      position:fixed; left:12px; bottom:12px; z-index:90;
+      display:none;
+    }
+    .homeCorner.active{ display:block; }
+    .cornerBtn{
+      border:none; cursor:pointer;
+      padding:10px 12px;
+      border-radius:14px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--txt);
+      font-weight:800;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      user-select:none;
+    }
+
+    .heroSky{
+      position:relative;
+      overflow:hidden;
+      min-height:220px;
+      background:
+        radial-gradient(circle at 70% 30%, rgba(130,170,255,.16), transparent 22%),
+        radial-gradient(circle at 25% 55%, rgba(180,255,215,.10), transparent 22%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.03));
+    }
+    .heroContent{ position:relative; z-index:2; }
+    .galaxySwirl{
+      position:absolute; right:-20px; top:-16px;
+      width:240px; height:240px;
+      pointer-events:none; opacity:.95;
+      animation: swirlClock 20s linear infinite;
+      filter: drop-shadow(0 0 14px rgba(122,167,255,.18));
+    }
+    .cluster{ animation: twinkleCluster 2.6s ease-in-out infinite; transform-origin:50% 50%; }
+    .cluster.c2{ animation-delay:-1s; }
+    .cluster.c3{ animation-delay:-1.6s; }
+    .cluster.c4{ animation-delay:-.5s; }
+    @keyframes swirlClock{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+    @keyframes twinkleCluster{
+      0%,100%{ opacity:.55; transform:scale(.95); }
+      50%{ opacity:1; transform:scale(1.08); }
+    }
+
+    .tabs{ display:flex; gap:10px; flex-wrap:wrap; }
+    .tab{
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+      font-weight:800;
+      user-select:none;
+      transition:.15s background,.15s transform;
+    }
+    .tab:hover{ background: rgba(255,255,255,.07); transform: translateY(-1px); }
+    .tab.active{ background: rgba(122,167,255,.12); border:1px solid rgba(122,167,255,.25); }
+
+    .shapeList{
+      display:none;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .shapeList.active{
+      display:grid;
+    }
+    @media (max-width:560px){
+      .shapeList,
+      .shapeList.active{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .shapeBtn{
+      width:100%; text-align:left; padding:12px 12px; border-radius:16px;
+      border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05);
+      color:var(--txt); cursor:pointer; font-weight:800;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      user-select:none; transition:.15s background,.15s transform;
+    }
+    .shapeBtn:hover{ background: rgba(255,255,255,.07); transform: translateY(-1px); }
+    .shapeBtn small{ opacity:.7; font-weight:700; }
+
+    .viewerGrid{ display:grid; grid-template-columns: 1.1fr .9fr; gap:12px; align-items:start; }
+    @media (max-width:980px){ .viewerGrid{ grid-template-columns:1fr; } }
+
+    #threeWrap{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+      overflow:hidden;
+      position:relative;
+      min-height: 320px;
+      height: min(56vh, 560px);
+    }
+    #threeWrap canvas{
+      width:100% !important;
+      height:100% !important;
+      display:block;
+      touch-action:none;
+    }
+    .hintSwipe{
+      position:absolute; left:12px; right:12px; top:12px;
+      padding:10px 12px; border-radius:14px;
+      background: rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.14);
+      font-weight:800; color:rgba(255,255,255,.86);
+      backdrop-filter: blur(8px); display:none;
+    }
+    .hintSwipe.show{ display:block; }
+
+    .panel{ border-radius:18px; border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); padding:12px; }
+    .panel h3{ margin:0 0 8px; font-size:15px; opacity:.92; }
+    .sliderRow{ margin:10px 0 0; }
+    .sliderRow label{ display:flex; justify-content:space-between; gap:10px; font-weight:800; opacity:.9; font-size:13px; }
+    input[type="range"]{ width:100%; height:30px; accent-color: var(--accent); }
+
+    .colorRow{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .cbtn{ border:none; cursor:pointer; padding:9px 12px; border-radius:999px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); color:var(--txt); font-weight:800; }
+    .cbtn:hover{ background: rgba(255,255,255,.08); }
+    .cbtn:active{ transform: scale(.98); }
+
+    .drawerBack,
+    .modalBack,
+    .quickBack{
+      position:fixed; inset:0;
+      background: linear-gradient(180deg, rgba(5,8,20,.38), var(--overlay));
+      backdrop-filter: blur(10px);
+      display:none; align-items:center; justify-content:center;
+      z-index:220; padding:14px;
+    }
+    .drawerBack.active,
+    .modalBack.active,
+    .quickBack.active{ display:flex; }
+
+    .drawer,
+    .modal,
+    .quickModal{
+      width:min(920px, 100%);
+      border-radius:22px;
+      background:
+        linear-gradient(180deg, var(--popup-bg-2), var(--popup-bg));
+      border:1px solid var(--popup-border);
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.58),
+        inset 0 1px 0 rgba(255,255,255,.04);
+      padding:14px;
+      max-height: 82vh;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      color:var(--popup-text);
+    }
+
+    .drawerHeader,
+    .modalHeader,
+    .quickHeader{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      position:sticky; top:0;
+      background:
+        linear-gradient(180deg, rgba(12,15,30,.98), rgba(10,12,26,.96));
+      padding:2px 0 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      z-index:2;
+      backdrop-filter: blur(10px);
+    }
+    .drawerHeader h3,
+    .modalHeader h3,
+    .quickHeader h3{
+      margin:0;
+      font-size:16px;
+      color:var(--popup-text);
+      letter-spacing:.2px;
+    }
+
+    .drawerClose{
+      border:none; cursor:pointer;
+      width:40px; height:40px;
+      border-radius:999px;
+      background: var(--popup-close-bg);
+      border:1px solid rgba(255,255,255,.10);
+      color:rgba(255,255,255,.92);
+      font-weight:900;
+      transition:.15s background,.15s transform;
+    }
+    .drawerClose:hover{
+      background: var(--popup-close-hover);
+      transform: translateY(-1px);
+    }
+
+    .grid2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    @media (max-width:700px){ .grid2{ grid-template-columns:1fr; } }
+
+    .item{
+      padding:12px; border-radius:16px; border:1px solid rgba(255,255,255,.08);
+      background: var(--popup-item);
+      cursor:pointer; font-weight:800;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      color:var(--popup-text);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+      transition:.15s background,.15s border-color,.15s transform;
+    }
+    .item:hover{
+      background: var(--popup-item-hover);
+      border-color: rgba(255,255,255,.12);
+      transform: translateY(-1px);
+    }
+    .item small{
+      color:var(--popup-muted);
+      opacity:1;
+      font-weight:700;
+      display:block;
+      margin-top:4px;
+    }
+
+    .badge{
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--popup-badge-border);
+      background: var(--popup-badge-bg);
+      color:var(--popup-text);
+      font-weight:900; font-size:12px; white-space:nowrap;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+
+    .quizQ{
+      font-weight:900; font-size:16px; line-height:1.45;
+      color:var(--popup-text);
+      background: rgba(255,255,255,.025);
+      border:1px solid rgba(255,255,255,.06);
+      padding:12px;
+      border-radius:16px;
+    }
+    .ansGrid{ display:grid; gap:10px; margin-top:12px; }
+    .ansBtn{
+      width:100%; text-align:left; padding:12px; border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.035);
+      color:var(--popup-text); cursor:pointer; font-weight:900;
+      transition:.15s background,.15s border-color,.15s transform;
+    }
+    .ansBtn:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.14);
+      transform: translateY(-1px);
+    }
+
+    .toast{
+      margin-top:10px; padding:10px 12px; border-radius:16px;
+      border:1px dashed rgba(255,255,255,.14);
+      background: rgba(255,255,255,.03);
+      font-weight:900; display:none;
+      color:var(--popup-text);
+    }
+    .toast.show{ display:block; }
+
+    .quickBody,
+    #drawerBody,
+    #modalBody{
+      padding-top:12px;
+      line-height:1.65;
+      font-weight:700;
+      color:var(--popup-text);
+    }
+
+    #drawerBody .muted,
+    #modalBody .muted,
+    .quickBody .muted{
+      color:var(--popup-muted);
+    }
+
+    #drawerBody .btn,
+    #modalBody .btn,
+    .quickBody .btn{
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--popup-text);
+      box-shadow:none;
+    }
+    #drawerBody .btn:hover,
+    #modalBody .btn:hover,
+    .quickBody .btn:hover{
+      background: rgba(255,255,255,.08);
+    }
+    #drawerBody .btn.primary,
+    #modalBody .btn.primary,
+    .quickBody .btn.primary{
+      background: linear-gradient(90deg, rgba(122,167,255,.18), rgba(180,255,215,.14));
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--popup-text);
+    }
+    #drawerBody .btn.danger,
+    #modalBody .btn.danger,
+    .quickBody .btn.danger{
+      background: rgba(255,106,138,.10);
+      border:1px solid rgba(255,106,138,.18);
+      color:#ffe5ea;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="galaxy"></canvas>
+  <div class="vignette"></div>
+
+  <div class="hud">
+    <div class="hud-left">
+      <div class="pill" id="pillUser">
+        <div class="buddyIcon" id="btnBuddy" title="Thú đồng hành (bấm để đổi)">
+          <svg viewBox="0 0 120 120" id="buddySvg" width="40" height="40" aria-hidden="true"></svg>
+        </div>
+        <div class="buddyText">
+          <b id="userNameLabel">Bạn</b>
+          <span id="buddyNameLabel">Thú đồng hành</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <button class="btn" id="btnQuickGuide">⚡ Hướng dẫn nhanh</button>
+      <button class="btn" id="btnStars">⭐ <span id="starCount">0</span></button>
+      <button class="btn" id="btnHome" style="display:none;">🏠 Trang chủ</button>
+    </div>
+  </div>
+
+  <div class="homeCorner" id="homeCorner">
+    <button class="cornerBtn" id="btnAccessLog">📌 Lượt truy cập: <span id="visitCount">0</span></button>
+  </div>
+
+  <section class="screen active" id="screenName">
+    <div class="wrap">
+      <div class="card">
+        <h1>Vũ trụ hình học • STEM 3D</h1>
+        <div class="muted">• Khám phá các hình học không gian từ 2D đến 3D •</div>
+        <div class="spacer"></div>
+
+        <h2>Nhập tên của bạn</h2>
+        <input class="input" id="nameInput" placeholder="Ví dụ: Ngọc..." maxlength="30" />
+        <div class="spacer"></div>
+
+        <div class="row">
+          <button class="btn primary" id="btnStart">Tiếp tục</button>
+          <button class="btn" id="btnSkip">Bỏ qua</button>
+        </div>
+
+        <div class="spacer"></div>
+        <div class="muted" style="font-size:13px;">* Một sản phẩm của Đoàn Bảo Ngọc 73 THCS Võ Nguyên Giáp 🎀</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screenHome">
+    <div class="wrap">
+      <div class="card heroSky">
+        <svg class="galaxySwirl" viewBox="0 0 240 240" aria-hidden="true">
+          <g>
+            <path d="M120 120c32-26 67-20 80 6 10 21 0 47-24 61-32 18-74 8-98-21-28-33-27-84 6-114 39-35 100-36 140 1" fill="none" stroke="rgba(122,167,255,.16)" stroke-width="10" stroke-linecap="round"/>
+            <path d="M120 120c-27 18-59 16-74-7-12-19-7-44 13-60 25-21 66-23 97-7 37 18 58 57 48 95" fill="none" stroke="rgba(180,255,215,.11)" stroke-width="8" stroke-linecap="round"/>
+          </g>
+          <g class="cluster c1">
+            <circle cx="146" cy="46" r="3.4" fill="#fff"/>
+            <circle cx="157" cy="56" r="2.2" fill="#d4e3ff"/>
+            <circle cx="136" cy="57" r="1.8" fill="#fff"/>
+            <circle cx="167" cy="41" r="1.6" fill="#fff"/>
+          </g>
+          <g class="cluster c2">
+            <circle cx="188" cy="88" r="3.2" fill="#fff"/>
+            <circle cx="200" cy="98" r="1.7" fill="#d9fff3"/>
+            <circle cx="178" cy="101" r="2.1" fill="#fff"/>
+            <circle cx="193" cy="76" r="1.5" fill="#fff"/>
+          </g>
+          <g class="cluster c3">
+            <circle cx="103" cy="173" r="3.1" fill="#fff"/>
+            <circle cx="115" cy="182" r="1.8" fill="#d4e3ff"/>
+            <circle cx="91" cy="184" r="1.9" fill="#fff"/>
+            <circle cx="99" cy="161" r="1.4" fill="#fff"/>
+          </g>
+          <g class="cluster c4">
+            <circle cx="56" cy="112" r="2.9" fill="#fff"/>
+            <circle cx="44" cy="122" r="1.6" fill="#d9fff3"/>
+            <circle cx="68" cy="123" r="1.8" fill="#fff"/>
+            <circle cx="61" cy="99" r="1.4" fill="#fff"/>
+          </g>
+        </svg>
+
+        <div class="heroContent">
+          <div class="muted" style="font-weight:800;">Một sản phẩm của</div>
+          <h1 style="margin-top:6px;">Đoàn Bảo Ngọc cutee 💞</h1>
+          <div class="muted">Khám phá thế giới hình học không gian 3D ✦ hình học phẳng 2D ✦ công thức & đặc điểm hình</div>
+
+          <div class="spacer"></div>
+          <div class="row">
+            <button class="btn primary" id="btnGoSelect">Bắt đầu chọn hình</button>
+            <button class="btn" id="btnGoQuizHub">🎮 Minigame</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screenSelect">
+    <div class="wrap">
+      <div class="card">
+        <h1>Chọn nhóm hình</h1>
+        <div class="muted">Bấm 2D hoặc 3D</div>
+
+        <div class="spacer"></div>
+        <div class="tabs">
+          <div class="tab" id="tab2d">Hình học phẳng (2D)</div>
+          <div class="tab" id="tab3d">Hình khối (3D)</div>
+        </div>
+
+        <div class="shapeList" id="shapeList2d"></div>
+        <div class="shapeList" id="shapeList3d"></div>
+
+        <div class="spacer"></div>
+        <div class="row">
+          <button class="btn" id="btnBackHomeFromSelect">⬅ Về trang chủ</button>
+          <button class="btn" id="btnSelectQuizHub">🎮 Minigame</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="screenViewer">
+    <div class="wrap">
+      <div class="card">
+        <h1 id="viewerTitle">Xem hình</h1>
+        <div class="muted" id="viewerSub">Xoay/zoom bằng tay.</div>
+
+        <div class="spacer"></div>
+
+        <div class="viewerGrid">
+          <div class="panel" style="padding:0; overflow:hidden;">
+            <div id="threeWrap">
+              <div class="hintSwipe" id="hintSwipe">Dùng 1 ngón tay để xoay • 2 ngón để zoom</div>
+            </div>
+            <div style="padding:12px; border-top:1px solid rgba(255,255,255,.10);">
+              <div class="muted" style="font-weight:800;">Có thể kéo xuống để xem thêm thông tin ↓</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Thông số</h3>
+            <div id="sliders"></div>
+
+            <div class="spacer"></div>
+            <h3>Màu</h3>
+            <div class="colorRow">
+              <button class="cbtn" data-mat="glass">Kính</button>
+              <button class="cbtn" data-mat="mono">Trắng</button>
+              <button class="cbtn" data-mat="blue">Xanh</button>
+              <button class="cbtn" data-mat="mint">Mint</button>
+              <button class="cbtn" data-mat="rainbow">Cầu vồng</button>
+            </div>
+
+            <div class="spacer"></div>
+            <div class="row">
+              <button class="btn" id="btnInfo">🧠 Bạn biết không?</button>
+              <button class="btn" id="btnFormula">📘 Công thức</button>
+            </div>
+
+            <div class="spacer"></div>
+            <div class="row">
+              <button class="btn primary" id="btnViewerQuiz">🎮 Minigame hình này</button>
+              <button class="btn danger" id="btnExitViewer">Thoát</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+        <div class="muted" style="font-size:13px;">* Đã chỉnh để hình ít bị cắt mép hơn khi xoay hoặc để ngang.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="drawerBack" id="drawerBack">
+    <div class="drawer">
+      <div class="drawerHeader">
+        <h3 id="drawerTitle">Thông tin</h3>
+        <button class="drawerClose" id="drawerClose">✕</button>
+      </div>
+      <div id="drawerBody"></div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="modalBack">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="modalTitle">Modal</h3>
+        <button class="drawerClose" id="modalClose">✕</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="quickBack" id="quickBack">
+    <div class="quickModal">
+      <div class="quickHeader">
+        <h3>⚡ Hướng dẫn nhanh</h3>
+        <button class="drawerClose" id="quickClose">✕</button>
+      </div>
+      <div class="quickBody">
+        • Vào xem hình: có thể xoay và zoom.<br>
+        • ⭐ dùng để mua thú đồng hành trong mục ⭐.<br>
+        • Minigame: mỗi hình có 100 câu (không cần làm hết), trả lời đúng sẽ được cộng sao.<br>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('galaxy');
+  const ctx = canvas.getContext('2d');
+  let W=0,H=0,dpr=1;
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio||1, 2);
+    W=window.innerWidth; H=window.innerHeight;
+    canvas.width=Math.floor(W*dpr);
+    canvas.height=Math.floor(H*dpr);
+    canvas.style.width=W+'px';
+    canvas.style.height=H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  const stars = Array.from({length:560}, () => (
+    {x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+0.25,a:Math.random()*0.55+0.15,s:Math.random()*0.6+0.2}
+  ));
+
+  let t=0;
+  function draw(){
+    t+=0.006;
+    ctx.clearRect(0,0,W,H);
+
+    const g = ctx.createRadialGradient(W*0.5,H*0.35,10,W*0.5,H*0.35,Math.max(W,H)*0.8);
+    g.addColorStop(0,'rgba(122,167,255,0.10)');
+    g.addColorStop(0.55,'rgba(180,255,215,0.06)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,W,H);
+
+    for(const s of stars){
+      const tw = s.a + 0.20*Math.sin(t*s.s + s.x*0.01);
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,255,255,${Math.max(0.05, tw)})`;
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+const LS = {
+  name:'stem_name',
+  stars:'stem_stars',
+  starLog:'stem_starLog',
+  visits:'stem_visits',
+  buddyId:'stem_buddyId',
+  owned:'stem_ownedBuddies'
+};
+
+function nowISO(){ return new Date().toISOString(); }
+function fmtTS(iso){
+  const d = new Date(iso);
+  const pad=x=>String(x).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} • ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+let userName = localStorage.getItem(LS.name) || '';
+let starsScore = Number(localStorage.getItem(LS.stars) || 0);
+let starLog = JSON.parse(localStorage.getItem(LS.starLog) || '[]');
+let visits = JSON.parse(localStorage.getItem(LS.visits) || '[]');
+let buddyId = localStorage.getItem(LS.buddyId) || 'bunny';
+let ownedBuddies = new Set(JSON.parse(localStorage.getItem(LS.owned) || '["bunny"]'));
+
+const elUserNameLabel = document.getElementById('userNameLabel');
+const elBuddyNameLabel = document.getElementById('buddyNameLabel');
+const elStarCount = document.getElementById('starCount');
+const elVisitCount = document.getElementById('visitCount');
+
+function setStars(n){
+  starsScore = Math.max(0, Math.floor(n));
+  elStarCount.textContent = starsScore;
+  localStorage.setItem(LS.stars, String(starsScore));
+}
+function addStars(delta, reason){
+  const d = Math.floor(delta);
+  if(!d) return;
+  const before = starsScore;
+  setStars(before + d);
+  starLog.unshift({ts: nowISO(), delta:d, total:starsScore, reason: reason||'quiz'});
+  starLog = starLog.slice(0, 300);
+  localStorage.setItem(LS.starLog, JSON.stringify(starLog));
+}
+function logVisit(){
+  const entry = {ts: nowISO(), name: userName || 'Ẩn danh', ua: navigator.userAgent};
+  visits.unshift(entry);
+  visits = visits.slice(0,300);
+  localStorage.setItem(LS.visits, JSON.stringify(visits));
+  elVisitCount.textContent = String(visits.length);
+}
+function setName(n){
+  userName = (n||'').trim().slice(0,30);
+  localStorage.setItem(LS.name, userName);
+  elUserNameLabel.textContent = userName ? userName : 'Bạn';
+}
+setName(userName);
+setStars(starsScore);
+elVisitCount.textContent = String(visits.length);
+
+const screens = {
+  name: document.getElementById('screenName'),
+  home: document.getElementById('screenHome'),
+  select: document.getElementById('screenSelect'),
+  viewer: document.getElementById('screenViewer')
+};
+const btnHome = document.getElementById('btnHome');
+const homeCorner = document.getElementById('homeCorner');
+
+function showScreen(key){
+  Object.values(screens).forEach(s=>s.classList.remove('active'));
+  screens[key].classList.add('active');
+  btnHome.style.display = (key==='home') ? 'none' : 'inline-block';
+  homeCorner.classList.toggle('active', key==='home');
+}
+btnHome.onclick = ()=> showScreen('home');
+
+document.getElementById('btnStart').onclick = ()=>{
+  setName(document.getElementById('nameInput').value);
+  logVisit();
+  showScreen('home');
+};
+document.getElementById('btnSkip').onclick = ()=>{
+  setName(userName || '');
+  logVisit();
+  showScreen('home');
+};
+document.getElementById('btnGoSelect').onclick = ()=> showScreen('select');
+document.getElementById('btnGoQuizHub').onclick = ()=> openQuizHub();
+document.getElementById('btnBackHomeFromSelect').onclick = ()=> showScreen('home');
+document.getElementById('btnSelectQuizHub').onclick = ()=> openQuizHub();
+
+document.getElementById('btnQuickGuide').onclick = ()=> document.getElementById('quickBack').classList.add('active');
+document.getElementById('quickClose').onclick = ()=> document.getElementById('quickBack').classList.remove('active');
+document.getElementById('quickBack').addEventListener('click', e=>{
+  if(e.target.id==='quickBack') document.getElementById('quickBack').classList.remove('active');
+});
+
+const modalBack = document.getElementById('modalBack');
+const modalTitle= document.getElementById('modalTitle');
+const modalBody = document.getElementById('modalBody');
+document.getElementById('modalClose').onclick = closeModal;
+modalBack.addEventListener('click', (e)=>{ if(e.target===modalBack) closeModal(); });
+
+function openModal(title, html){
+  modalTitle.textContent = title;
+  modalBody.innerHTML = html;
+  modalBack.classList.add('active');
+}
+function closeModal(){
+  modalBack.classList.remove('active');
+  modalBody.innerHTML='';
+}
+
+const drawerBack = document.getElementById('drawerBack');
+const drawerTitle= document.getElementById('drawerTitle');
+const drawerBody = document.getElementById('drawerBody');
+document.getElementById('drawerClose').onclick = closeDrawer;
+drawerBack.addEventListener('click', (e)=>{ if(e.target===drawerBack) closeDrawer(); });
+
+function openDrawer(title, html){
+  drawerTitle.textContent = title;
+  drawerBody.innerHTML = html;
+  drawerBack.classList.add('active');
+}
+function closeDrawer(){
+  drawerBack.classList.remove('active');
+  drawerBody.innerHTML='';
+}
+
+document.getElementById('btnAccessLog').onclick = ()=>{
+  const list = visits.length ? visits.map(v=>`
+    <div class="item" style="cursor:default;">
+      <div><div>${v.name}</div><small>${fmtTS(v.ts)}</small></div>
+      <span class="badge">📍</span>
+    </div>`).join('') : `<div class="muted">Chưa có lịch sử.</div>`;
+  openModal('📌 Lịch sử truy cập (theo thiết bị)', `
+    <div class="muted" style="margin-bottom:10px;">Lịch sử truy cập không được công khai.</div>
+    <div class="grid2">${list}</div>`);
+};
+
+const BUDDIES = [
+  {id:'bunny', name:'Thỏ Học Thuật', cost:0, kind:'rabbit', palette:['#7aa7ff','#0b1026','#ffffff']},
+  {id:'cat', name:'Mèo Thiên Hà', cost:120, kind:'cat', palette:['#bbd7ff','#0b1026','#fff4ff']},
+  {id:'fox', name:'Cáo Tinh Tú', cost:150, kind:'fox', palette:['#ffd2a8','#0b1026','#ffffff']},
+  {id:'owl', name:'Gấu Minh Triết', cost:180, kind:'bear', palette:['#d8d2ff','#0b1026','#fff9f2']},
+  {id:'panda', name:'Panda Lạnh Lùng', cost:160, kind:'panda', palette:['#ffffff','#1b1f2a','#f6f7fb']},
+  {id:'dino', name:'Khủng Long STEM', cost:200, kind:'dino', palette:['#a5ffbf','#0b1026','#effff7']}
+];
+
+function saveBuddies(){
+  localStorage.setItem(LS.buddyId, buddyId);
+  localStorage.setItem(LS.owned, JSON.stringify([...ownedBuddies]));
+}
+
+function buddySVG(kind, palette){
+  const [a,b,c] = palette || ['#7aa7ff','#0b1026','#ffffff'];
+  const face = {
+    rabbit: `
+      <path d="M38 22 C30 10, 44 6, 46 22 Z" fill="${c}" opacity=".92"/>
+      <path d="M74 22 C76 6, 90 10, 82 22 Z" fill="${c}" opacity=".92"/>`,
+    cat: `
+      <path d="M35 34 L28 22 L40 28 Z" fill="${c}" opacity=".92"/>
+      <path d="M85 34 L92 22 L80 28 Z" fill="${c}" opacity=".92"/>
+      <path d="M35 82 L18 78" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+      <path d="M35 86 L18 86" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+      <path d="M35 90 L18 94" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+      <path d="M85 82 L102 78" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+      <path d="M85 86 L102 86" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+      <path d="M85 90 L102 94" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>`,
+    fox: `
+      <path d="M34 40 L26 26 L44 34 Z" fill="${c}" opacity=".9"/>
+      <path d="M86 40 L94 26 L76 34 Z" fill="${c}" opacity=".9"/>`,
+    bear: `
+      <circle cx="38" cy="40" r="10" fill="${c}" opacity=".9"/>
+      <circle cx="82" cy="40" r="10" fill="${c}" opacity=".9"/>
+      <circle cx="38" cy="40" r="4" fill="#ffd9d9" opacity=".55"/>
+      <circle cx="82" cy="40" r="4" fill="#ffd9d9" opacity=".55"/>`,
+    panda: `
+      <circle cx="36" cy="44" r="10" fill="#131722" opacity=".94"/>
+      <circle cx="84" cy="44" r="10" fill="#131722" opacity=".94"/>
+      <circle cx="48" cy="73" r="7" fill="#1a1e29" opacity=".94"/>
+      <circle cx="72" cy="73" r="7" fill="#1a1e29" opacity=".94"/>`,
+    dino: `
+      <path d="M36 29 C31 22, 31 39, 41 41 Z" fill="${c}" opacity=".9"/>
+      <path d="M82 28 C90 22, 91 38, 80 40 Z" fill="${c}" opacity=".9"/>
+      <path d="M27 67 C33 60, 42 58, 51 60" stroke="#ecfff6" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+      <path d="M28 60 L32 53 L36 60" fill="#ecfff6" opacity=".85"/>
+      <path d="M40 55 L44 48 L48 55" fill="#ecfff6" opacity=".85"/>
+      <path d="M52 53 L56 46 L60 53" fill="#ecfff6" opacity=".85"/>`
+  }[kind] || '';
+
+  return `
+    <defs>
+      <linearGradient id="g_${kind}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${a}" stop-opacity=".96"/>
+        <stop offset="1" stop-color="${b}" stop-opacity=".96"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="120" height="120" rx="26" fill="url(#g_${kind})"/>
+    <circle cx="60" cy="72" r="34" fill="rgba(255,255,255,.08)"/>
+    ${face}
+    <ellipse cx="60" cy="74" rx="28" ry="22" fill="${c}" opacity=".95"/>
+    <circle cx="50" cy="72" r="3.2" fill="#1b1f2a"/>
+    <circle cx="70" cy="72" r="3.2" fill="#1b1f2a"/>
+    <ellipse cx="60" cy="79" rx="5.6" ry="3.8" fill="#1b1f2a" opacity=".86"/>
+    <path d="M56 84 C60 88, 64 88, 68 84" stroke="rgba(255,106,138,.82)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <text x="10" y="26" font-size="14" fill="rgba(255,255,255,.75)">✦</text>`;
+}
+
+function renderBuddyHUD(){
+  const b = BUDDIES.find(x=>x.id===buddyId) || BUDDIES[0];
+  document.getElementById('buddySvg').innerHTML = buddySVG(b.kind, b.palette);
+  elBuddyNameLabel.textContent = b.name;
+}
+renderBuddyHUD();
+
+document.getElementById('btnBuddy').onclick = ()=> openBuddyShop();
+
+function openBuddyShop(){
+  openModal('🧸 Thú đồng hành (mua bằng ⭐)', `
+    <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+      <div class="badge">⭐ hiện có: ${starsScore}</div>
+      <button class="btn" id="btnEarnStars">Kiếm thêm sao</button>
+    </div>
+    <div class="grid2" id="buddyGrid"></div>`);
+  setTimeout(()=>{
+    const grid = document.getElementById('buddyGrid');
+    const earn = document.getElementById('btnEarnStars');
+    if(earn) earn.onclick = ()=> { closeModal(); openQuizHub(); };
+    grid.innerHTML = '';
+    BUDDIES.forEach(it=>{
+      const owned = ownedBuddies.has(it.id);
+      const isOn = it.id===buddyId;
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div style="width:44px;height:44px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03);display:grid;place-items:center;overflow:hidden;">
+            <svg viewBox="0 0 120 120" width="44" height="44">${buddySVG(it.kind, it.palette)}</svg>
+          </div>
+          <div>
+            <div>${it.name}</div>
+            <small>${owned ? (isOn ? 'Đang dùng' : 'Đã sở hữu') : ('Giá: ⭐ ' + it.cost)}</small>
+          </div>
+        </div>
+        <span class="badge">${owned ? (isOn ? '✅' : 'Dùng') : 'Mua'}</span>`;
+      div.onclick = ()=>{
+        if(!owned){
+          if(starsScore < it.cost){
+            alert('Chưa đủ ⭐. Vào minigame kiếm thêm nha!');
+            return;
+          }
+          setStars(starsScore - it.cost);
+          ownedBuddies.add(it.id);
+          saveBuddies();
+        }
+        buddyId = it.id;
+        saveBuddies();
+        renderBuddyHUD();
+        closeModal();
+      };
+      grid.appendChild(div);
+    });
+  },0);
+}
+
+document.getElementById('btnStars').onclick = ()=>{
+  const list = starLog.length ? starLog.map(x=>`
+    <div class="item" style="cursor:default;">
+      <div><div>${x.delta>0?`+⭐ ${x.delta}`:`⭐ ${x.delta}`} <span class="muted">(${x.reason})</span></div><small>${fmtTS(x.ts)} • tổng: ⭐ ${x.total}</small></div>
+      <span class="badge">${x.delta>0?'✅':'⚠️'}</span>
+    </div>`).join('') : `<div class="muted">Chưa có lịch sử sao.</div>`;
+  openModal('⭐ Sao & lịch sử', `
+    <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+      <div class="badge">⭐ hiện có: ${starsScore}</div>
+      <button class="btn" id="btnGoQuizFromStars">Kiếm thêm sao</button>
+    </div>
+    <div class="grid2">${list}</div>`);
+  setTimeout(()=>{
+    const b=document.getElementById('btnGoQuizFromStars');
+    if(b) b.onclick=()=>{ closeModal(); openQuizHub(); };
+  },0);
+};
+
+const SHAPES_2D = [
+  {id:'square',name:'Hình vuông (Square)'},
+  {id:'rectangle',name:'Hình chữ nhật (Rectangle)'},
+  {id:'circle',name:'Đường tròn (Circle)'},
+  {id:'tri_equilateral',name:'Tam giác đều (Equilateral)'},
+  {id:'tri_isosceles',name:'Tam giác cân (Isosceles)'},
+  {id:'tri_right',name:'Tam giác vuông (Right)'},
+  {id:'trapezoid',name:'Hình thang (Trapezoid)'},
+  {id:'parallelogram',name:'Hình bình hành (Parallelogram)'},
+  {id:'rhombus',name:'Hình thoi (Rhombus)'},
+  {id:'regular_polygon',name:'Đa giác đều n cạnh (Regular n-gon)'},
+  {id:'sector',name:'Hình quạt tròn (Sector)'},
+  {id:'annulus',name:'Hình vành khuyên (Annulus)'}
+];
+const SHAPES_3D = [
+  {id:'cube',name:'Hình lập phương (Cube)'},
+  {id:'rect_prism',name:'Hình hộp chữ nhật (Rectangular prism)'},
+  {id:'tri_prism',name:'Lăng trụ tam giác (Triangular prism)'},
+  {id:'cylinder',name:'Hình trụ (Cylinder)'},
+  {id:'cone',name:'Hình nón (Cone)'},
+  {id:'frustum_cone',name:'Hình nón cụt (Frustum)'},
+  {id:'sphere',name:'Hình cầu (Sphere)'},
+  {id:'pyr_square',name:'Hình chóp tứ giác đều (Square pyramid)'},
+  {id:'pyr_tri',name:'Hình chóp tam giác (Triangular pyramid)'}
+];
+
+const tab2d = document.getElementById('tab2d');
+const tab3d = document.getElementById('tab3d');
+const shapeList2d = document.getElementById('shapeList2d');
+const shapeList3d = document.getElementById('shapeList3d');
+
+let currentTab = null;
+
+function setTab(which){
+  currentTab = which;
+
+  tab2d.classList.toggle('active', which === '2d');
+  tab3d.classList.toggle('active', which === '3d');
+
+  shapeList2d.classList.toggle('active', which === '2d');
+  shapeList3d.classList.toggle('active', which === '3d');
+}
+
+tab2d.addEventListener('click', ()=> setTab('2d'));
+tab3d.addEventListener('click', ()=> setTab('3d'));
+
+function renderShapeButtons(target, arr){
+  target.innerHTML='';
+  arr.forEach(s=>{
+    const btn = document.createElement('button');
+    btn.className='shapeBtn';
+    btn.innerHTML = `<span>${s.name}</span><small>xem</small>`;
+    btn.onclick = ()=> openViewer(s.id, s.name);
+    target.appendChild(btn);
+  });
+}
+renderShapeButtons(shapeList2d, SHAPES_2D);
+renderShapeButtons(shapeList3d, SHAPES_3D);
+
+setTab(null);
+
+function infoFor(id){
+  switch(id){
+    case 'square': return 'Hình vuông có 4 cạnh bằng nhau và 4 góc vuông.';
+    case 'rectangle': return 'Hình chữ nhật có 4 góc vuông; các cạnh đối song song và bằng nhau.';
+    case 'circle': return 'Đường tròn là tập hợp điểm cách đều tâm một khoảng r (bán kính).';
+    case 'tri_equilateral': return 'Tam giác đều có 3 cạnh bằng nhau và 3 góc bằng nhau (60°).';
+    case 'tri_isosceles': return 'Tam giác cân có 2 cạnh bằng nhau; 2 góc ở đáy bằng nhau.';
+    case 'tri_right': return 'Tam giác vuông có 1 góc 90°. Hay dùng định lý Pythagoras.';
+    case 'trapezoid': return 'Hình thang có 1 cặp cạnh đối song song (2 đáy).';
+    case 'parallelogram': return 'Hình bình hành có 2 cặp cạnh đối song song và bằng nhau.';
+    case 'rhombus': return 'Hình thoi có 4 cạnh bằng nhau; hai đường chéo vuông góc và cắt nhau tại trung điểm.';
+    case 'regular_polygon': return 'Đa giác đều n cạnh: các cạnh bằng nhau, các góc bằng nhau.';
+    case 'sector': return 'Hình quạt tròn gồm 2 bán kính và 1 cung tròn (góc ở tâm θ).';
+    case 'annulus': return 'Vành khuyên là phần giữa 2 đường tròn đồng tâm bán kính R và r.';
+    case 'cube': return 'Hình lập phương có 6 mặt là hình vuông bằng nhau.';
+    case 'rect_prism': return 'Hình hộp chữ nhật có 6 mặt là hình chữ nhật.';
+    case 'tri_prism': return 'Lăng trụ tam giác có đáy là tam giác và hai đáy song song.';
+    case 'cylinder': return 'Hình trụ có 2 đáy tròn song song; chiều cao h.';
+    case 'cone': return 'Hình nón có đáy tròn và một đỉnh; chiều cao h.';
+    case 'frustum_cone': return 'Nón cụt có 2 bán kính R, r và chiều cao h.';
+    case 'sphere': return 'Hình cầu có mọi điểm trên mặt cách đều tâm một khoảng r.';
+    case 'pyr_square': return 'Chóp đáy vuông và chiều cao h.';
+    case 'pyr_tri': return 'Chóp đáy tam giác và chiều cao h.';
+    default: return 'Chọn hình để xem thông tin.';
+  }
+}
+
+function formulaFor(id){
+  const pi='π';
+  switch(id){
+    case 'square': return 'Chu vi: <b>P = 4a</b><br>Diện tích: <b>S = a²</b>';
+    case 'rectangle': return 'Chu vi: <b>P = 2(w + h)</b><br>Diện tích: <b>S = w·h</b>';
+    case 'circle': return `Chu vi: <b>C = 2${pi}r</b><br>Diện tích: <b>S = ${pi}r²</b>`;
+    case 'tri_equilateral': return 'Chu vi: <b>P = 3a</b><br>Diện tích: <b>S = (√3/4)·a²</b>';
+    case 'tri_isosceles': return 'Chu vi: <b>P = 2b + a</b><br>Chiều cao: <b>h = √(b² − (a²/4))</b><br>Diện tích: <b>S = (a·h)/2</b>';
+    case 'tri_right': return 'Cạnh huyền: <b>c = √(a² + b²)</b><br>Chu vi: <b>P = a + b + c</b><br>Diện tích: <b>S = (a·b)/2</b>';
+    case 'trapezoid': return 'Chu vi: <b>P = a + b + c + d</b><br>Diện tích: <b>S = ((a + b)/2)·h</b> (a,b là 2 đáy)';
+    case 'parallelogram': return 'Chu vi: <b>P = 2(a + b)</b><br>Diện tích: <b>S = a·h</b>';
+    case 'rhombus': return 'Chu vi: <b>P = 4a</b><br>Diện tích: <b>S = (d1·d2)/2</b>';
+    case 'regular_polygon': return `Chu vi: <b>P = n·a</b><br>Diện tích: <b>S = (n·a²)/(4·tan(${pi}/n))</b>`;
+    case 'sector': return `Cung tròn: <b>L = (θ/360)·2${pi}r</b><br>Diện tích quạt: <b>S = (θ/360)·${pi}r²</b>`;
+    case 'annulus': return `Diện tích: <b>S = ${pi}(R² − r²)</b>`;
+    case 'cube': return 'Diện tích xq: <b>Sxq = 4a²</b><br>Diện tích tp: <b>Stp = 6a²</b><br>Thể tích: <b>V = a³</b>';
+    case 'rect_prism': return 'Diện tích tp: <b>Stp = 2(wd + wh + dh)</b><br>Thể tích: <b>V = w·d·h</b>';
+    case 'tri_prism': return 'Thể tích: <b>V = S_đáy · L</b><br>Diện tích tp: <b>Stp = 2S_đáy + P_đáy·L</b>';
+    case 'cylinder': return `Diện tích xq: <b>Sxq = 2${pi}rh</b><br>Diện tích tp: <b>Stp = 2${pi}r(h + r)</b><br>Thể tích: <b>V = ${pi}r²h</b>`;
+    case 'cone': return `Đường sinh: <b>l = √(r² + h²)</b><br>Diện tích xq: <b>Sxq = ${pi}rl</b><br>Diện tích tp: <b>Stp = ${pi}r(l + r)</b><br>Thể tích: <b>V = (1/3)·${pi}r²h</b>`;
+    case 'frustum_cone': return `Thể tích: <b>V = (1/3)·${pi}h(R² + Rr + r²)</b><br>Diện tích xq: <b>Sxq = ${pi}(R + r)l</b>, l = √((R−r)² + h²)<br>Diện tích tp: <b>Stp = Sxq + ${pi}(R² + r²)</b>`;
+    case 'sphere': return `Diện tích mặt cầu: <b>S = 4${pi}r²</b><br>Thể tích: <b>V = (4/3)·${pi}r³</b>`;
+    case 'pyr_square': return 'Thể tích: <b>V = (1/3)·a²·h</b><br>Diện tích tp: <b>Stp = S_đáy + S_xq</b>';
+    case 'pyr_tri': return 'Thể tích: <b>V = (1/3)·S_đáy·h</b><br>Diện tích tp: <b>Stp = S_đáy + S_xq</b>';
+    default: return 'Chọn hình khác để có công thức.';
+  }
+}
+
+const threeWrap = document.getElementById('threeWrap');
+const hintSwipe = document.getElementById('hintSwipe');
+const slidersWrap = document.getElementById('sliders');
+const viewerTitle = document.getElementById('viewerTitle');
+const viewerSub = document.getElementById('viewerSub');
+
+let scene, camera, renderer, controls;
+let mesh = null;
+let outline = null;
+let currentShapeId = null;
+let currentShapeName = null;
+let rainbowTimer = null;
+let currentIs2D = false;
+
+function initThree(){
+  scene = new THREE.Scene();
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.setSize(threeWrap.clientWidth, threeWrap.clientHeight, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  threeWrap.appendChild(renderer.domElement);
+
+  renderer.domElement.style.touchAction='none';
+  renderer.domElement.addEventListener('touchstart', e=>e.preventDefault(), {passive:false});
+  renderer.domElement.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+
+  camera = new THREE.PerspectiveCamera(48, threeWrap.clientWidth/threeWrap.clientHeight, 0.01, 1000);
+  camera.position.set(5.5, 4.4, 8.2);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enablePan = false;
+  controls.enableZoom = true;
+  controls.minDistance = 1.2;
+  controls.maxDistance = 40;
+  controls.screenSpacePanning = false;
+  controls.rotateSpeed = 0.95;
+  controls.zoomSpeed = 1.0;
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x0b1026, 0.95);
+  scene.add(hemi);
+
+  const key = new THREE.DirectionalLight(0xffffff, 1.2);
+  key.position.set(6,10,6);
+  scene.add(key);
+
+  const fill = new THREE.PointLight(0x7aa7ff, 0.48);
+  fill.position.set(-6, 3, 4);
+  scene.add(fill);
+
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(80,80),
+    new THREE.MeshStandardMaterial({color:0x05060f, transparent:true, opacity:0.20, roughness:1})
+  );
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = -2.5;
+  scene.add(ground);
+
+  window.addEventListener('resize', resizeRenderer);
+
+  (function anim(){
+    requestAnimationFrame(anim);
+    controls.update();
+    renderer.render(scene, camera);
+  })();
+}
+
+function resizeRenderer(){
+  if(!renderer || !camera) return;
+  const w = threeWrap.clientWidth;
+  const h = threeWrap.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+function clearMesh(){
+  [mesh, outline].forEach(obj=>{
+    if(!obj) return;
+    scene.remove(obj);
+    obj.geometry?.dispose?.();
+    if(obj.material){
+      Array.isArray(obj.material)
+        ? obj.material.forEach(m=>m.dispose?.())
+        : obj.material.dispose?.();
+    }
+  });
+  mesh = null;
+  outline = null;
+}
+
+function baseMaterial(mode='glass'){
+  if(mode==='mono'){
+    return new THREE.MeshStandardMaterial({
+      color:0xffffff, roughness:0.35, metalness:0.05, side:THREE.DoubleSide
+    });
+  }
+  if(mode==='blue'){
+    return new THREE.MeshStandardMaterial({
+      color:0x7aa7ff, roughness:0.25, metalness:0.10, side:THREE.DoubleSide
+    });
+  }
+  if(mode==='mint'){
+    return new THREE.MeshStandardMaterial({
+      color:0xb4ffd7, roughness:0.25, metalness:0.08, side:THREE.DoubleSide
+    });
+  }
+  return new THREE.MeshPhysicalMaterial({
+    color:0xffffff,
+    transparent:true,
+    opacity:0.42,
+    roughness:0.14,
+    metalness:0.04,
+    clearcoat:0.75,
+    side:THREE.DoubleSide
+  });
+}
+
+function lineMaterial(){
+  return new THREE.LineBasicMaterial({
+    color:0xffffff,
+    transparent:true,
+    opacity:.68
+  });
+}
+
+function sliderDefsFor(id){
+  switch(id){
+    case 'square': return [{k:'a',label:'a',min:0.6,max:10,step:0.1,val:3.0}];
+    case 'rectangle': return [
+      {k:'w',label:'w',min:0.6,max:12,step:0.1,val:4.0},
+      {k:'h',label:'h',min:0.6,max:12,step:0.1,val:2.8}
+    ];
+    case 'circle': return [{k:'r',label:'r',min:0.6,max:8,step:0.1,val:2.4}];
+    case 'tri_equilateral': return [{k:'a',label:'a',min:0.8,max:12,step:0.1,val:3.2}];
+    case 'tri_isosceles': return [
+      {k:'a',label:'a (đáy)',min:0.8,max:12,step:0.1,val:3.2},
+      {k:'b',label:'b (cạnh bên)',min:1.8,max:12,step:0.1,val:4.2}
+    ];
+    case 'tri_right': return [
+      {k:'a',label:'a',min:0.8,max:12,step:0.1,val:3.2},
+      {k:'b',label:'b',min:0.8,max:12,step:0.1,val:4.0}
+    ];
+    case 'trapezoid': return [
+      {k:'a',label:'a (đáy lớn)',min:1,max:14,step:0.1,val:6.5},
+      {k:'b',label:'b (đáy bé)',min:1,max:12,step:0.1,val:4.0},
+      {k:'h',label:'h',min:0.8,max:10,step:0.1,val:3.0}
+    ];
+    case 'parallelogram': return [
+      {k:'a',label:'a',min:1,max:14,step:0.1,val:6.0},
+      {k:'b',label:'b',min:1,max:12,step:0.1,val:4.0},
+      {k:'h',label:'h (cao theo a)',min:0.8,max:10,step:0.1,val:3.0}
+    ];
+    case 'rhombus': return [
+      {k:'d1',label:'d1',min:1,max:14,step:0.1,val:6.0},
+      {k:'d2',label:'d2',min:1,max:14,step:0.1,val:4.2}
+    ];
+    case 'regular_polygon': return [
+      {k:'n',label:'n (5–12)',min:5,max:12,step:1,val:6},
+      {k:'a',label:'a',min:0.8,max:10,step:0.1,val:3.0}
+    ];
+    case 'sector': return [
+      {k:'r',label:'r',min:0.8,max:10,step:0.1,val:3.0},
+      {k:'theta',label:'θ (độ)',min:10,max:330,step:1,val:90}
+    ];
+    case 'annulus': return [
+      {k:'R',label:'R',min:1.2,max:10,step:0.1,val:4.2},
+      {k:'r',label:'r',min:0.6,max:9,step:0.1,val:2.4}
+    ];
+
+    case 'cube': return [{k:'a',label:'a',min:0.8,max:10,step:0.1,val:2.8}];
+    case 'rect_prism': return [
+      {k:'w',label:'w',min:0.8,max:12,step:0.1,val:3.6},
+      {k:'d',label:'d',min:0.8,max:12,step:0.1,val:2.6},
+      {k:'h',label:'h',min:0.8,max:12,step:0.1,val:2.4}
+    ];
+    case 'tri_prism': return [
+      {k:'a',label:'a',min:0.8,max:12,step:0.1,val:3.2},
+      {k:'b',label:'b',min:1.8,max:12,step:0.1,val:4.2},
+      {k:'L',label:'L',min:0.8,max:14,step:0.1,val:4.0}
+    ];
+    case 'cylinder': return [
+      {k:'r',label:'r',min:0.8,max:8,step:0.1,val:2.0},
+      {k:'h',label:'h',min:0.8,max:14,step:0.1,val:4.0}
+    ];
+    case 'cone': return [
+      {k:'r',label:'r',min:0.8,max:8,step:0.1,val:2.0},
+      {k:'h',label:'h',min:0.8,max:14,step:0.1,val:4.2}
+    ];
+    case 'frustum_cone': return [
+      {k:'R',label:'R',min:1.2,max:9,step:0.1,val:3.2},
+      {k:'r',label:'r',min:0.6,max:8,step:0.1,val:1.6},
+      {k:'h',label:'h',min:0.8,max:14,step:0.1,val:4.0}
+    ];
+    case 'sphere': return [{k:'r',label:'r',min:0.8,max:8,step:0.1,val:2.4}];
+    case 'pyr_square': return [
+      {k:'a',label:'a',min:1.0,max:10,step:0.1,val:3.0},
+      {k:'h',label:'h',min:0.8,max:14,step:0.1,val:4.2}
+    ];
+    case 'pyr_tri': return [
+      {k:'a',label:'a',min:1.0,max:10,step:0.1,val:3.0},
+      {k:'h',label:'h',min:0.8,max:14,step:0.1,val:4.2}
+    ];
+    default:
+      return [{k:'s',label:'size',min:1,max:10,step:0.1,val:3}];
+  }
+}
+
+function buildSliders(defs){
+  slidersWrap.innerHTML = '';
+  defs.forEach(d=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'sliderRow';
+    wrap.innerHTML = `
+      <label>
+        <span>${d.label}</span>
+        <span id="val_${d.k}">${Number(d.val).toFixed(d.step<1?2:0)}</span>
+      </label>
+      <input type="range" id="rng_${d.k}" min="${d.min}" max="${d.max}" step="${d.step}" value="${d.val}">
+    `;
+    slidersWrap.appendChild(wrap);
+
+    const rng = wrap.querySelector('#rng_'+d.k);
+    const val = wrap.querySelector('#val_'+d.k);
+    const handler = ()=>{
+      val.textContent = Number(rng.value).toFixed(d.step<1?2:0);
+      rebuildMesh();
+    };
+    rng.addEventListener('input', handler, {passive:true});
+    rng.addEventListener('change', handler, {passive:true});
+  });
+}
+
+function getVal(k){
+  const el = document.getElementById('rng_'+k);
+  return el ? Number(el.value) : 0;
+}
+
+function makeGeometry(id){
+  if(['square','rectangle'].includes(id)){
+    const w = id==='square' ? getVal('a') : getVal('w');
+    const h = id==='square' ? getVal('a') : getVal('h');
+    return new THREE.PlaneGeometry(w,h);
+  }
+
+  if(id==='circle'){
+    return new THREE.CircleGeometry(getVal('r'), 96);
+  }
+
+  if(id==='tri_equilateral'){
+    const a = getVal('a');
+    const sh = new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.lineTo(a,0);
+    sh.lineTo(a/2, Math.sqrt(3)*a/2);
+    sh.lineTo(0,0);
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='tri_isosceles'){
+    const a = getVal('a'), b = getVal('b');
+    const hh = Math.sqrt(Math.max(b*b-(a*a)/4,0.01));
+    const sh = new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.lineTo(a,0);
+    sh.lineTo(a/2,hh);
+    sh.lineTo(0,0);
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='tri_right'){
+    const a = getVal('a'), b = getVal('b');
+    const sh = new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.lineTo(a,0);
+    sh.lineTo(0,b);
+    sh.lineTo(0,0);
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='trapezoid'){
+    const A = getVal('a'), B = getVal('b'), H = getVal('h');
+    const dx = (A-B)/2;
+    const sh = new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.lineTo(A,0);
+    sh.lineTo(A-dx,H);
+    sh.lineTo(dx,H);
+    sh.lineTo(0,0);
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='parallelogram'){
+    const a = getVal('a'), b = getVal('b'), h = getVal('h');
+    const skew = Math.min(b*0.6, a*0.4);
+    const sh = new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.lineTo(a,0);
+    sh.lineTo(a+skew,h);
+    sh.lineTo(skew,h);
+    sh.lineTo(0,0);
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='rhombus'){
+    const d1 = getVal('d1'), d2 = getVal('d2');
+    const sh = new THREE.Shape();
+    sh.moveTo(0, d2/2);
+    sh.lineTo(d1/2, 0);
+    sh.lineTo(0, -d2/2);
+    sh.lineTo(-d1/2, 0);
+    sh.lineTo(0, d2/2);
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='regular_polygon'){
+    const n = Math.round(getVal('n'));
+    const a = getVal('a');
+    const R = a/(2*Math.sin(Math.PI/n));
+    const sh = new THREE.Shape();
+    for(let i=0;i<n;i++){
+      const ang = i*2*Math.PI/n - Math.PI/2;
+      const x = Math.cos(ang)*R;
+      const y = Math.sin(ang)*R;
+      if(i===0) sh.moveTo(x,y); else sh.lineTo(x,y);
+    }
+    sh.closePath();
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='sector'){
+    const r = getVal('r');
+    const th = getVal('theta')*Math.PI/180;
+    const sh = new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.absarc(0,0,r,0,th,false);
+    sh.lineTo(0,0);
+    return new THREE.ShapeGeometry(sh);
+  }
+
+  if(id==='annulus'){
+    const R = getVal('R');
+    const r = Math.min(getVal('r'), R-0.2);
+    const out = new THREE.Shape();
+    out.absarc(0,0,R,0,Math.PI*2,false);
+    const hole = new THREE.Path();
+    hole.absarc(0,0,r,0,Math.PI*2,true);
+    out.holes.push(hole);
+    return new THREE.ShapeGeometry(out);
+  }
+
+  if(id==='cube'){
+    const a = getVal('a');
+    return new THREE.BoxGeometry(a,a,a);
+  }
+
+  if(id==='rect_prism'){
+    return new THREE.BoxGeometry(getVal('w'), getVal('h'), getVal('d'));
+  }
+
+  if(id==='tri_prism'){
+    const a = getVal('a'), b = getVal('b'), L = getVal('L');
+    const hh = Math.sqrt(Math.max(b*b-(a*a)/4,0.01));
+    const sh = new THREE.Shape();
+    sh.moveTo(0,0);
+    sh.lineTo(a,0);
+    sh.lineTo(a/2,hh);
+    sh.lineTo(0,0);
+    const ex = new THREE.ExtrudeGeometry(sh, {depth:L, bevelEnabled:false});
+    ex.translate(-a/2, -hh/3, -L/2);
+    return ex;
+  }
+
+  if(id==='cylinder'){
+    return new THREE.CylinderGeometry(getVal('r'), getVal('r'), getVal('h'), 64, 1, false);
+  }
+
+  if(id==='cone'){
+    return new THREE.ConeGeometry(getVal('r'), getVal('h'), 64, 1, false);
+  }
+
+  if(id==='frustum_cone'){
+    const R = getVal('R'), r = getVal('r'), h = getVal('h');
+    return new THREE.CylinderGeometry(r, R, h, 64, 1, false);
+  }
+
+  if(id==='sphere'){
+    return new THREE.SphereGeometry(getVal('r'), 64, 48);
+  }
+
+  if(id==='pyr_square'){
+    return new THREE.ConeGeometry(getVal('a')*0.75, getVal('h'), 4, 1, false);
+  }
+
+  if(id==='pyr_tri'){
+    return new THREE.ConeGeometry(getVal('a')*0.75, getVal('h'), 3, 1, false);
+  }
+
+  return new THREE.BoxGeometry(3,3,3);
+}
+
+let currentMatMode = 'glass';
+
+function addOutlineForGeometry(geo){
+  const edges = new THREE.EdgesGeometry(geo);
+  outline = new THREE.LineSegments(edges, lineMaterial());
+  scene.add(outline);
+}
+
+function fitCameraToObject(obj, is2D=false){
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+
+  const maxDim = Math.max(size.x, size.y, size.z || 0.01);
+  const fov = camera.fov * (Math.PI / 180);
+  let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+  cameraZ *= is2D ? 1.9 : 1.55;
+
+  controls.target.copy(center);
+
+  if(is2D){
+    camera.position.set(center.x, center.y + maxDim*0.18, center.z + cameraZ);
+  }else{
+    camera.position.set(center.x + maxDim*1.1, center.y + maxDim*0.9, center.z + cameraZ);
+  }
+
+  camera.near = Math.max(0.01, maxDim / 100);
+  camera.far = Math.max(1000, maxDim * 100);
+  camera.updateProjectionMatrix();
+
+  controls.minDistance = Math.max(0.6, maxDim * 0.45);
+  controls.maxDistance = Math.max(20, maxDim * 8);
+  controls.update();
+}
+
+function rebuildMesh(){
+  if(!scene) return;
+
+  if(rainbowTimer){
+    clearInterval(rainbowTimer);
+    rainbowTimer = null;
+  }
+
+  clearMesh();
+
+  const geo = makeGeometry(currentShapeId);
+  const mat = baseMaterial(currentMatMode);
+  mesh = new THREE.Mesh(geo, mat);
+
+  currentIs2D = SHAPES_2D.some(s=>s.id===currentShapeId);
+
+  if(currentIs2D){
+    mesh.rotation.x = 0;
+    mesh.rotation.y = 0;
+    mesh.rotation.z = 0;
+    mesh.position.set(0,0,0);
+    controls.maxPolarAngle = Math.PI;
+    controls.minPolarAngle = 0;
+  }else{
+    controls.maxPolarAngle = Math.PI;
+    controls.minPolarAngle = 0;
+  }
+
+  scene.add(mesh);
+  addOutlineForGeometry(geo);
+  fitCameraToObject(mesh, currentIs2D);
+}
+
+document.querySelectorAll('.cbtn').forEach(b=>{
+  b.onclick = ()=>{
+    currentMatMode = b.dataset.mat;
+    if(currentMatMode==='rainbow'){
+      currentMatMode = 'mono';
+      rebuildMesh();
+      let h = 0;
+      rainbowTimer = setInterval(()=>{
+        h = (h + 6) % 360;
+        if(mesh && mesh.material && mesh.material.color){
+          mesh.material.color.setStyle(`hsl(${h},95%,70%)`);
+        }
+      }, 120);
+    }else{
+      rebuildMesh();
+    }
+  };
+});
+
+function openViewer(id, name){
+  if(!renderer) initThree();
+
+  currentShapeId = id;
+  currentShapeName = name;
+  viewerTitle.textContent = name;
+  viewerSub.textContent = 'Xoay/zoom bằng tay.';
+
+  const defs = sliderDefsFor(id);
+  buildSliders(defs);
+
+  hintSwipe.classList.add('show');
+  setTimeout(()=> hintSwipe.classList.remove('show'), 5000);
+
+  showScreen('viewer');
+  rebuildMesh();
+  setTimeout(resizeRenderer, 60);
+}
+
+document.getElementById('btnInfo').onclick = ()=>{
+  openDrawer('🧠 Bạn biết không?', `<div>${infoFor(currentShapeId)}</div>`);
+};
+
+document.getElementById('btnFormula').onclick = ()=>{
+  openDrawer('📘 Công thức', `<div>${formulaFor(currentShapeId)}</div>`);
+};
+
+document.getElementById('btnExitViewer').onclick = ()=>{
+  openModal('🥺 thui mò, ở lại với tui', `
+    <div class="row" style="justify-content:center; margin-top:10px;">
+      <button class="btn primary" id="btnStay">okie</button>
+      <button class="btn danger" id="btnLeave">hongg</button>
+    </div>
+  `);
+  setTimeout(()=>{
+    document.getElementById('btnStay').onclick = ()=> closeModal();
+    document.getElementById('btnLeave').onclick = ()=>{
+      closeModal();
+      showScreen('select');
+    };
+  },0);
+};
+
+const BANK = {};
+
+function rng(seed){
+  let s = seed >>> 0;
+  return function(){
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+    return (s >>> 0) / 4294967296;
+  };
+}
+function ri(r,a,b){ return Math.floor(r()*(b-a+1))+a; }
+function shuffle(r, arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(r()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function roundNice(x){
+  const n = Math.round(x*100)/100;
+  return Number.isInteger(n) ? n : n;
+}
+
+function genBank(shapeId){
+  const seedBase = (
+    shapeId.split('').reduce((a,c)=>a+c.charCodeAt(0),0) +
+    (userName||'').length*997 + 20260304
+  ) >>> 0;
+
+  const r = rng(seedBase);
+  const bank = [];
+  for(let i=0;i<100;i++){
+    bank.push(genOneQ(r, shapeId));
+  }
+  BANK[shapeId] = bank;
+}
+
+function genOneQ(r, id){
+  const pi = Math.PI;
+  let q = '', ans = 0, reward = 8;
+
+  function mc(correct){
+    const del1 = correct*0.12 + ri(r,1,6);
+    const del2 = correct*0.18 + ri(r,2,9);
+    const del3 = correct*0.25 + ri(r,3,12);
+    const a1 = roundNice(correct);
+    const a2 = roundNice(Math.max(0.01, correct + del1));
+    const a3 = roundNice(Math.max(0.01, correct - del2));
+    const a4 = roundNice(Math.max(0.01, correct + del3));
+    const choices = shuffle(r, [a1,a2,a3,a4]);
+    return {choices, answer:a1};
+  }
+
+  if(id==='square'){
+    const a=ri(r,2,20), type=ri(r,1,2);
+    if(type===1){ ans=4*a; q=`Hình vuông cạnh a=${a}. Chu vi P=?`; reward=6; }
+    else{ ans=a*a; q=`Hình vuông cạnh a=${a}. Diện tích S=?`; reward=7; }
+  }
+  else if(id==='rectangle'){
+    const w=ri(r,2,24), h=ri(r,2,20), type=ri(r,1,2);
+    if(type===1){ ans=2*(w+h); q=`Hình chữ nhật w=${w}, h=${h}. Chu vi P=?`; reward=6; }
+    else{ ans=w*h; q=`Hình chữ nhật w=${w}, h=${h}. Diện tích S=?`; reward=7; }
+  }
+  else if(id==='circle'){
+    const rad=ri(r,2,16), type=ri(r,1,2);
+    if(type===1){ ans=roundNice(2*pi*rad); q=`Đường tròn r=${rad}. Chu vi C≈?`; reward=8; }
+    else{ ans=roundNice(pi*rad*rad); q=`Hình tròn r=${rad}. Diện tích S≈?`; reward=9; }
+  }
+  else if(id==='tri_right'){
+    const a=ri(r,3,20), b=ri(r,3,20), type=ri(r,1,2);
+    if(type===1){ ans=roundNice((a*b)/2); q=`Tam giác vuông có 2 cạnh góc vuông a=${a}, b=${b}. Diện tích S=?`; reward=7; }
+    else{
+      const c=Math.sqrt(a*a+b*b);
+      ans=roundNice(a+b+c);
+      q=`Tam giác vuông a=${a}, b=${b}. Chu vi P≈?`;
+      reward=8;
+    }
+  }
+  else if(id==='tri_equilateral'){
+    const a=ri(r,3,24), type=ri(r,1,2);
+    if(type===1){ ans=3*a; q=`Tam giác đều cạnh a=${a}. Chu vi P=?`; reward=6; }
+    else{ ans=roundNice(Math.sqrt(3)*a*a/4); q=`Tam giác đều cạnh a=${a}. Diện tích S≈?`; reward=9; }
+  }
+  else if(id==='tri_isosceles'){
+    const a=ri(r,4,22), b=ri(r,Math.ceil(a/2)+1,a+10), type=ri(r,1,2);
+    const h=Math.sqrt(Math.max(b*b-(a*a)/4,0.01));
+    if(type===1){ ans=roundNice(2*b+a); q=`Tam giác cân đáy a=${a}, cạnh bên b=${b}. Chu vi P=?`; reward=7; }
+    else{ ans=roundNice(a*h/2); q=`Tam giác cân đáy a=${a}, cạnh bên b=${b}. Diện tích S≈?`; reward=9; }
+  }
+  else if(id==='trapezoid'){
+    const a=ri(r,6,26), b=ri(r,2,Math.max(3,a-2)), h=ri(r,2,14), type=ri(r,1,2);
+    if(type===1){ ans=roundNice((a+b)*h/2); q=`Hình thang có 2 đáy a=${a}, b=${b}, chiều cao h=${h}. Diện tích S=?`; reward=9; }
+    else{
+      const c=ri(r,2,20), d=ri(r,2,20);
+      ans=a+b+c+d;
+      q=`Hình thang có 4 cạnh: a=${a}, b=${b}, c=${c}, d=${d}. Chu vi P=?`;
+      reward=7;
+    }
+  }
+  else if(id==='parallelogram'){
+    const a=ri(r,5,26), b=ri(r,3,20), h=ri(r,2,14), type=ri(r,1,2);
+    if(type===1){ ans=2*(a+b); q=`Hình bình hành cạnh a=${a}, b=${b}. Chu vi P=?`; reward=7; }
+    else{ ans=a*h; q=`Hình bình hành cạnh đáy a=${a}, chiều cao h=${h}. Diện tích S=?`; reward=8; }
+  }
+  else if(id==='rhombus'){
+    const a=ri(r,4,22), d1=ri(r,4,28), d2=ri(r,4,28), type=ri(r,1,2);
+    if(type===1){ ans=4*a; q=`Hình thoi cạnh a=${a}. Chu vi P=?`; reward=7; }
+    else{ ans=roundNice(d1*d2/2); q=`Hình thoi có d1=${d1}, d2=${d2}. Diện tích S=?`; reward=9; }
+  }
+  else if(id==='regular_polygon'){
+    const n=ri(r,5,12), a=ri(r,2,18), type=ri(r,1,2);
+    if(type===1){ ans=n*a; q=`Đa giác đều n=${n}, cạnh a=${a}. Chu vi P=?`; reward=7; }
+    else{ ans=roundNice((n*a*a)/(4*Math.tan(pi/n))); q=`Đa giác đều n=${n}, cạnh a=${a}. Diện tích S≈?`; reward=10; }
+  }
+  else if(id==='sector'){
+    const rad=ri(r,3,18), theta=ri(r,20,300), type=ri(r,1,2);
+    if(type===1){ ans=roundNice((theta/360)*pi*rad*rad); q=`Hình quạt tròn r=${rad}, θ=${theta}°. Diện tích S≈?`; reward=10; }
+    else{ ans=roundNice((theta/360)*2*pi*rad); q=`Hình quạt tròn r=${rad}, θ=${theta}°. Độ dài cung L≈?`; reward=9; }
+  }
+  else if(id==='annulus'){
+    const R=ri(r,4,18), rr=ri(r,2,Math.max(3,R-1));
+    ans=roundNice(pi*(R*R-rr*rr));
+    q=`Vành khuyên có R=${R}, r=${rr}. Diện tích S≈?`;
+    reward=10;
+  }
+  else if(id==='cube'){
+    const a=ri(r,2,16), type=ri(r,1,2);
+    if(type===1){ ans=a*a*a; q=`Lập phương cạnh a=${a}. Thể tích V=?`; reward=9; }
+    else{ ans=6*a*a; q=`Lập phương cạnh a=${a}. Diện tích toàn phần Stp=?`; reward=9; }
+  }
+  else if(id==='rect_prism'){
+    const w=ri(r,2,18), d=ri(r,2,18), h=ri(r,2,18), type=ri(r,1,2);
+    if(type===1){ ans=w*d*h; q=`Hộp chữ nhật w=${w}, d=${d}, h=${h}. Thể tích V=?`; reward=10; }
+    else{ ans=2*(w*d + w*h + d*h); q=`Hộp chữ nhật w=${w}, d=${d}, h=${h}. Diện tích tp Stp=?`; reward=10; }
+  }
+  else if(id==='cylinder'){
+    const r0=ri(r,2,12), h0=ri(r,2,20), type=ri(r,1,2);
+    if(type===1){ ans=roundNice(pi*r0*r0*h0); q=`Hình trụ r=${r0}, h=${h0}. Thể tích V≈?`; reward=12; }
+    else{ ans=roundNice(2*pi*r0*(h0+r0)); q=`Hình trụ r=${r0}, h=${h0}. Diện tích tp Stp≈?`; reward=12; }
+  }
+  else if(id==='cone'){
+    const r0=ri(r,2,12), h0=ri(r,2,20), type=ri(r,1,2);
+    if(type===1){ ans=roundNice((pi*r0*r0*h0)/3); q=`Hình nón r=${r0}, h=${h0}. Thể tích V≈?`; reward=12; }
+    else{
+      const l=Math.sqrt(r0*r0+h0*h0);
+      ans=roundNice(pi*r0*(l+r0));
+      q=`Hình nón r=${r0}, h=${h0}. Diện tích tp Stp≈?`;
+      reward=12;
+    }
+  }
+  else if(id==='frustum_cone'){
+    const R=ri(r,4,14), rr=ri(r,2,Math.max(3,R-1)), h0=ri(r,2,18), type=ri(r,1,2);
+    if(type===1){
+      ans=roundNice((pi*h0*(R*R + R*rr + rr*rr))/3);
+      q=`Nón cụt R=${R}, r=${rr}, h=${h0}. Thể tích V≈?`;
+      reward=14;
+    }else{
+      const l=Math.sqrt((R-rr)*(R-rr) + h0*h0);
+      ans=roundNice(pi*(R+rr)*l + pi*(R*R + rr*rr));
+      q=`Nón cụt R=${R}, r=${rr}, h=${h0}. Diện tích tp Stp≈?`;
+      reward=14;
+    }
+  }
+  else if(id==='sphere'){
+    const r0=ri(r,2,14), type=ri(r,1,2);
+    if(type===1){ ans=roundNice((4*pi*r0*r0*r0)/3); q=`Hình cầu r=${r0}. Thể tích V≈?`; reward=14; }
+    else{ ans=roundNice(4*pi*r0*r0); q=`Hình cầu r=${r0}. Diện tích mặt cầu S≈?`; reward=13; }
+  }
+  else if(id==='pyr_square'){
+    const a=ri(r,2,16), h0=ri(r,2,20);
+    ans=roundNice((a*a*h0)/3);
+    q=`Chóp đáy vuông cạnh a=${a}, chiều cao h=${h0}. Thể tích V=?`;
+    reward=13;
+  }
+  else if(id==='pyr_tri'){
+    const Sbase=ri(r,10,120), h0=ri(r,2,20);
+    ans=roundNice((Sbase*h0)/3);
+    q=`Chóp có diện tích đáy S=${Sbase} và chiều cao h=${h0}. Thể tích V=?`;
+    reward=13;
+  }
+  else if(id==='tri_prism'){
+    const Sbase=ri(r,10,120), L=ri(r,2,20);
+    ans=Sbase*L;
+    q=`Lăng trụ có diện tích đáy S=${Sbase} và chiều dài L=${L}. Thể tích V=?`;
+    reward=12;
+  }
+  else{
+    ans=42; q='Câu hỏi mẫu'; reward=8;
+  }
+
+  const {choices, answer} = mc(ans);
+  const penalty = Math.ceil(reward*0.5);
+  return {q, choices, answer, reward, penalty};
+}
+
+let quizShapeId = null;
+let quizIndex = 0;
+let quizItem = null;
+
+function openQuizHub(){
+  openModal('🎮 Minigame', `
+    <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+      <div class="badge">⭐ hiện có: ${starsScore}</div>
+      <div class="muted" style="font-weight:800;">Đúng sẽ +⭐.</div>
+    </div>
+
+    <div class="row" style="margin-bottom:10px;">
+      <button class="btn primary" id="quizTab2d">2D</button>
+      <button class="btn" id="quizTab3d">3D</button>
+    </div>
+
+    <div id="quizList" class="shapeList active" style="margin-top:0;"></div>
+  `);
+
+  setTimeout(()=>{
+    const list = document.getElementById('quizList');
+    const t2 = document.getElementById('quizTab2d');
+    const t3 = document.getElementById('quizTab3d');
+
+    function render(which){
+      t2.classList.toggle('primary', which==='2d');
+      t3.classList.toggle('primary', which==='3d');
+      list.innerHTML = '';
+      const arr = which==='2d' ? SHAPES_2D : SHAPES_3D;
+      arr.forEach(s=>{
+        const b = document.createElement('button');
+        b.className = 'shapeBtn';
+        b.innerHTML = `<span>${s.name}</span><small>100 câu</small>`;
+        b.onclick = ()=>{ closeModal(); startQuiz(s.id, s.name); };
+        list.appendChild(b);
+      });
+    }
+
+    t2.onclick = ()=> render('2d');
+    t3.onclick = ()=> render('3d');
+    render('2d');
+  },0);
+}
+
+document.getElementById('btnViewerQuiz').onclick = ()=>{
+  if(!currentShapeId) return;
+  startQuiz(currentShapeId, currentShapeName || currentShapeId);
+};
+
+function startQuiz(shapeId, shapeName){
+  quizShapeId = shapeId;
+  if(!BANK[shapeId]) genBank(shapeId);
+
+  quizIndex = 0;
+  quizItem = BANK[shapeId][quizIndex];
+
+  openModal(`🎮 ${shapeName} • Câu ${quizIndex+1}/100`, quizHTML(shapeName));
+  bindQuizButtons(shapeName);
+}
+
+function quizHTML(shapeName){
+  const it = quizItem;
+  return `
+    <div class="badge" style="margin-bottom:10px;">⭐ ${starsScore}</div>
+    <div class="quizQ">${it.q}</div>
+
+    <div class="ansGrid">
+      ${it.choices.map((c,idx)=>`<button class="ansBtn" data-ans="${c}">${String.fromCharCode(65+idx)}. ${c}</button>`).join('')}
+    </div>
+
+    <div class="toast" id="quizToast"></div>
+
+    <div class="row" style="justify-content:space-between; margin-top:12px;">
+      <button class="btn" id="btnQuizExit">Thoát</button>
+      <div class="badge">Đúng +⭐ ${it.reward} • Sai −⭐ ${it.penalty}</div>
+    </div>
+  `;
+}
+
+function bindQuizButtons(shapeName){
+  const toast = document.getElementById('quizToast');
+  const ansBtns = Array.from(document.querySelectorAll('.ansBtn'));
+  const exitBtn = document.getElementById('btnQuizExit');
+
+  exitBtn.onclick = ()=> closeModal();
+
+  ansBtns.forEach(btn=>{
+    btn.onclick = ()=>{
+      const val = Number(btn.dataset.ans);
+      const ok = (Number(val) === Number(quizItem.answer));
+
+      if(ok){
+        addStars(quizItem.reward, `quiz:${quizShapeId}`);
+        toast.textContent = `✅ Đúng! +⭐ ${quizItem.reward}`;
+      }else{
+        addStars(-quizItem.penalty, `quiz:${quizShapeId}`);
+        toast.textContent = `❌ Sai! −⭐ ${quizItem.penalty} (đáp án: ${quizItem.answer})`;
+      }
+      toast.classList.add('show');
+
+      setTimeout(()=>{
+        quizIndex++;
+        if(quizIndex >= 100){
+          openModal('🎉 Hoàn thành 100 câu!', `
+            <div class="badge" style="margin-bottom:10px;">⭐ hiện có: ${starsScore}</div>
+            <div class="muted">Bạn đã hoàn thành ngân hàng câu hỏi của hình này. Vuýp quáaa 🎉</div>
+            <div class="row" style="margin-top:12px;">
+              <button class="btn primary" id="btnAgain">Làm lại</button>
+              <button class="btn" id="btnOther">Chọn hình khác</button>
+            </div>
+          `);
+          setTimeout(()=>{
+            document.getElementById('btnAgain').onclick = ()=>{
+              closeModal();
+              startQuiz(quizShapeId, shapeName || currentShapeName || quizShapeId);
+            };
+            document.getElementById('btnOther').onclick = ()=>{
+              closeModal();
+              openQuizHub();
+            };
+          },0);
+          return;
+        }
+
+        quizItem = BANK[quizShapeId][quizIndex];
+        openModal(`🎮 ${shapeName || currentShapeName || quizShapeId} • Câu ${quizIndex+1}/100`, quizHTML(shapeName));
+        bindQuizButtons(shapeName);
+      }, 700);
+    };
+  });
+}
+
+(function bootstrap(){
+  document.getElementById('nameInput').value = userName || '';
+
+})();
+</script>
+</body>
+</html>
